@@ -105,10 +105,12 @@ void layer_join_forward(LayerJoin *join, DenseLayer *input,
         // Initialize sum to the bias
         double sum = output->neurons[i].bias;
 
+        // Offset into the weights array
+        int weights_offset = i * input->count;
+
         // Weighted sum
         for (int j = 0; j < input->count; j++)
-            sum +=
-                join->weights[i * input->count + j] * input->neurons[j].value;
+            sum += join->weights[weights_offset + j] * input->neurons[j].value;
 
         // Assign the activated value
         output->neurons[i].value = output->activation.fn(sum);
