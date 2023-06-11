@@ -20,6 +20,11 @@ static int layer_sizes[LAYER_COUNT] = {
     OUTPUTS,
 };
 
+// Mean squared error
+static double error_fn(double expected, double predicted) {
+    return (expected - predicted) * (expected - predicted);
+}
+
 int main() {
     Activation activation;
     Cost cost;
@@ -53,7 +58,7 @@ int main() {
         // Safely extract the value
         double prediction = output->neurons[0].value;
         double expected = set.data[offset + 4];
-        double error = fabs(expected - prediction);
+        double error = error_fn(expected, prediction);
         double accuracy = 1.0 - error;
 
         accuracy_sum += accuracy;
