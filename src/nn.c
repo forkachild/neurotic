@@ -73,7 +73,7 @@ void dense_layer_fill_loss_gradients(DenseLayer *layer, Cost *cost,
     }
 }
 
-void dense_layer_print(DenseLayer *layer) {
+void dense_layer_print(const DenseLayer *layer) {
     for (int i = 0; i < layer->count; i++)
         printf("%.02f\t", layer->neurons[i].value);
     printf("\n");
@@ -189,30 +189,29 @@ static void neural_network_forward(NeuralNetwork *nn) {
         layer_join_forward(&nn->joins[l], &nn->layers[l], &nn->layers[l + 1]);
 }
 
-static void neural_network_backward(NeuralNetwork *nn) {
+static void neural_network_error_backpropagate(NeuralNetwork *nn) {
     for (int l = nn->count - 1; l >= 1; l--)
         layer_join_backward(&nn->joins[l - 1], &nn->layers[l - 1],
                             &nn->layers[l], nn->learning_rate);
 }
 
-DenseLayer *neural_network_first_layer(NeuralNetwork *nn) {
+const DenseLayer *neural_network_first_layer(const NeuralNetwork *nn) {
     return &nn->layers[0];
 }
 
-DenseLayer *neural_network_last_layer(NeuralNetwork *nn) {
+const DenseLayer *neural_network_last_layer(const NeuralNetwork *nn) {
     return &nn->layers[nn->count - 1];
 }
 
 void neural_network_train(NeuralNetwork *nn, const double *input,
                           const double *expected) {
     neural_network_predict(nn, input);
-    dense_layer_fill_loss_gradients(neural_network_last_layer(nn),
-                                    &COST_BINARY_CROSS_ENTROPY, expected);
-    neural_network_backward(nn);
+    dense_layer_fill_loss_gradients(&nn->layers[0], &nn->cost, expected);
+    neural_network_error_backpropagate(nn);
 }
 
 void neural_network_predict(NeuralNetwork *nn, const double *input) {
-    dense_layer_fill_values(neural_network_first_layer(nn), input);
+    dense_layer_fill_values(&nn->layers[nn->count - 1], input);
     neural_network_forward(nn);
 }
 

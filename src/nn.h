@@ -38,7 +38,7 @@ void dense_layer_init(DenseLayer *layer, int count, Activation *activation);
 void dense_layer_fill_values(DenseLayer *layer, const double *input);
 void dense_layer_fill_loss_gradients(DenseLayer *layer, Cost *cost,
                                      const double *expected);
-void dense_layer_print(DenseLayer *layer);
+void dense_layer_print(const DenseLayer *layer);
 void dense_layer_deinit(DenseLayer *layer);
 
 typedef struct LayerJoin {
@@ -63,8 +63,8 @@ typedef struct NeuralNetwork {
 
 void neural_network_init(NeuralNetwork *nn, int count, int *layer_counts,
                          double learning_rate, Cost cost);
-DenseLayer *neural_network_first_layer(NeuralNetwork *nn);
-DenseLayer *neural_network_last_layer(NeuralNetwork *nn);
+const DenseLayer *neural_network_first_layer(const NeuralNetwork *nn);
+const DenseLayer *neural_network_last_layer(const NeuralNetwork *nn);
 void neural_network_train(NeuralNetwork *nn, const double *input,
                           const double *expected);
 void neural_network_predict(NeuralNetwork *nn, const double *input);
