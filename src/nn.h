@@ -19,7 +19,7 @@ typedef struct Cost {
 void cost_init_bin_cross_entropy(Cost *cost);
 void cost_deinit(Cost *cost);
 
-typedef struct {
+typedef struct Neuron {
     double bias;
     double value;
     double loss_gradient;
@@ -31,12 +31,12 @@ void neuron_deinit(Neuron *neuron);
 typedef struct DenseLayer {
     int count;
     Neuron *neurons;
-    const Activation *activation;
+    Activation activation;
 } DenseLayer;
 
-void dense_layer_init(DenseLayer *layer, int count, Activation *activation);
+void dense_layer_init(DenseLayer *layer, int count, Activation activation);
 void dense_layer_fill_values(DenseLayer *layer, const double *input);
-void dense_layer_fill_loss_gradients(DenseLayer *layer, Cost *cost,
+void dense_layer_fill_loss_gradients(DenseLayer *layer, Cost cost,
                                      const double *expected);
 void dense_layer_print(const DenseLayer *layer);
 void dense_layer_deinit(DenseLayer *layer);
@@ -62,7 +62,8 @@ typedef struct NeuralNetwork {
 } NeuralNetwork;
 
 void neural_network_init(NeuralNetwork *nn, int count, int *layer_counts,
-                         double learning_rate, Cost cost);
+                         double learning_rate, Activation activation,
+                         Cost cost);
 const DenseLayer *neural_network_first_layer(const NeuralNetwork *nn);
 const DenseLayer *neural_network_last_layer(const NeuralNetwork *nn);
 void neural_network_train(NeuralNetwork *nn, const double *input,

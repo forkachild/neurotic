@@ -37,15 +37,15 @@ void cost_deinit(Cost *cost) {
     cost->d_fn = NULL;
 }
 
-void neuron_init(Neuron *neuron) {
+void neuron_init(Neuron *neuron) { neuron_deinit(neuron); }
+
+void neuron_deinit(Neuron *neuron) {
     neuron->value = 0.0;
     neuron->bias = 0.0;
     neuron->loss_gradient = 0.0;
 }
 
-void neuron_deinit(Neuron *neuron) {}
-
-void dense_layer_init(DenseLayer *layer, int count, Activation *activation) {
+void dense_layer_init(DenseLayer *layer, int count, Activation activation) {
     Neuron *neurons = (Neuron *)malloc(count * sizeof(Neuron));
 
     for (int i = 0; i < count; i++)
@@ -61,15 +61,15 @@ void dense_layer_fill_values(DenseLayer *layer, const double *input) {
         layer->neurons[i].value = input[i];
 }
 
-void dense_layer_fill_loss_gradients(DenseLayer *layer, Cost *cost,
+void dense_layer_fill_loss_gradients(DenseLayer *layer, Cost cost,
                                      const double *expected) {
     Neuron *neurons = layer->neurons;
 
     for (int i = 0; i < layer->count; i++) {
         Neuron *neuron = &neurons[i];
 
-        neuron->loss_gradient = cost->d_fn(neuron->value, expected[i]) *
-                                layer->activation->d_fn(neuron->value);
+        neuron->loss_gradient = cost.d_fn(neuron->value, expected[i]) *
+                                layer->activation.d_fn(neuron->value);
     }
 }
 
@@ -93,7 +93,7 @@ void layer_join_init(LayerJoin *join, int count) {
     double *weights = (double *)malloc(count * sizeof(double));
 
     for (int i = 0; i < count; i++)
-        weights[i] = 1.0;
+        weights[i] = (double)rand() / RAND_MAX;
 
     join->count = count;
     join->weights = weights;
@@ -111,7 +111,7 @@ void layer_join_forward(LayerJoin *join, DenseLayer *input,
                 join->weights[i * output->count + j] * input->neurons[j].value;
 
         // Assign the activated value
-        output->neurons[i].value = output->activation->fn(sum);
+        output->neurons[i].value = output->activation.fn(sum);
     }
 }
 
@@ -132,10 +132,10 @@ void layer_join_backward(LayerJoin *join, DenseLayer *input, DenseLayer *output,
             Neuron *input_neuron = &input->neurons[j];
             double *weight = &join->weights[i * output->count + i];
 
-            // TODO: Swap the following two lines and see
+            // TODO: Swap the following two statements and see
             input_neuron->loss_gradient +=
                 output_neuron->loss_gradient * *weight *
-                input->activation->d_fn(input_neuron->value);
+                input->activation.d_fn(input_neuron->value);
 
             // Adjust the weight
             *weight -= learning_rate * output_neuron->loss_gradient *
@@ -152,25 +152,16 @@ void layer_join_deinit(LayerJoin *join) {
     join->weights = NULL;
 }
 
-static Activation ACTIVATION_SIGMOID = {
-    .fn = &sigmoid,
-    .d_fn = &d_sigmoid,
-};
-
-static Cost COST_BINARY_CROSS_ENTROPY = {
-    .fn = &binary_cross_entropy,
-    .d_fn = &d_binary_cross_entropy,
-};
-
 void neural_network_init(NeuralNetwork *nn, int count, int *layer_counts,
-                         double learning_rate, Cost cost) {
+                         double learning_rate, Activation activation,
+                         Cost cost) {
     if (count < 2)
         return;
 
     DenseLayer *layers = (DenseLayer *)malloc(count * sizeof(DenseLayer));
 
     for (int i = 0; i < count; i++)
-        dense_layer_init(&layers[i], layer_counts[i], &ACTIVATION_SIGMOID);
+        dense_layer_init(&layers[i], layer_counts[i], activation);
 
     LayerJoin *joins = (LayerJoin *)malloc((count - 1) * sizeof(LayerJoin));
 
@@ -184,6 +175,14 @@ void neural_network_init(NeuralNetwork *nn, int count, int *layer_counts,
     nn->cost = cost;
 }
 
+const DenseLayer *neural_network_first_layer(const NeuralNetwork *nn) {
+    return &nn->layers[0];
+}
+
+const DenseLayer *neural_network_last_layer(const NeuralNetwork *nn) {
+    return &nn->layers[nn->count - 1];
+}
+
 static void neural_network_forward(NeuralNetwork *nn) {
     for (int l = 0; l <= nn->count - 2; l++)
         layer_join_forward(&nn->joins[l], &nn->layers[l], &nn->layers[l + 1]);
@@ -195,23 +194,16 @@ static void neural_network_error_backpropagate(NeuralNetwork *nn) {
                             &nn->layers[l], nn->learning_rate);
 }
 
-const DenseLayer *neural_network_first_layer(const NeuralNetwork *nn) {
-    return &nn->layers[0];
-}
-
-const DenseLayer *neural_network_last_layer(const NeuralNetwork *nn) {
-    return &nn->layers[nn->count - 1];
-}
-
 void neural_network_train(NeuralNetwork *nn, const double *input,
                           const double *expected) {
     neural_network_predict(nn, input);
-    dense_layer_fill_loss_gradients(&nn->layers[0], &nn->cost, expected);
+    dense_layer_fill_loss_gradients(&nn->layers[nn->count - 1], nn->cost,
+                                    expected);
     neural_network_error_backpropagate(nn);
 }
 
 void neural_network_predict(NeuralNetwork *nn, const double *input) {
-    dense_layer_fill_values(&nn->layers[nn->count - 1], input);
+    dense_layer_fill_values(&nn->layers[0], input);
     neural_network_forward(nn);
 }
 

@@ -8,14 +8,15 @@
 // These are hard coded for the "data_banknote_authentication.txt" file
 #define LAYER_COUNT 3
 #define INPUT_FEATURES 4
+#define HIDDEN_LAYER 2
 #define OUTPUTS 1
 
 #define TRAINING_SET_FRACTION 0.7
-#define LEARNING_RATE 0.3
+#define LEARNING_RATE 0.8
 
 static int layer_sizes[LAYER_COUNT] = {
     INPUT_FEATURES,
-    2,
+    HIDDEN_LAYER,
     OUTPUTS,
 };
 
@@ -28,7 +29,8 @@ int main() {
     activation_init_sigmoid(&activation);
     cost_init_bin_cross_entropy(&cost);
 
-    neural_network_init(&nn, LAYER_COUNT, layer_sizes, LEARNING_RATE, cost);
+    neural_network_init(&nn, LAYER_COUNT, layer_sizes, LEARNING_RATE,
+                        activation, cost);
     training_set_init_from_csv(&set, "../data_banknote_authentication.txt");
 
     int training_samples_count = (int)(set.rows * TRAINING_SET_FRACTION);
@@ -43,8 +45,8 @@ int main() {
     double accuracy_sum = 0.0;
 
     for (int i = 0; i < test_samples_count; i++) {
-        DenseLayer *output = neural_network_last_layer(&nn);
         int offset = (i + training_samples_count) * set.cols;
+        const DenseLayer *output = neural_network_last_layer(&nn);
 
         neural_network_predict(&nn, &set.data[offset]);
 
