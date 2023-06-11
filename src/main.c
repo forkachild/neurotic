@@ -12,7 +12,7 @@
 #define OUTPUTS 1
 
 #define TRAINING_SET_FRACTION 0.7
-#define LEARNING_RATE 0.8
+#define LEARNING_RATE 0.1
 
 static int layer_sizes[LAYER_COUNT] = {
     INPUT_FEATURES,

@@ -108,7 +108,7 @@ void layer_join_forward(LayerJoin *join, DenseLayer *input,
         // Weighted sum
         for (int j = 0; j < input->count; j++)
             sum +=
-                join->weights[i * output->count + j] * input->neurons[j].value;
+                join->weights[i * input->count + j] * input->neurons[j].value;
 
         // Assign the activated value
         output->neurons[i].value = output->activation.fn(sum);
@@ -130,7 +130,7 @@ void layer_join_backward(LayerJoin *join, DenseLayer *input, DenseLayer *output,
 
         for (int j = 0; j < input->count; j++) {
             Neuron *input_neuron = &input->neurons[j];
-            double *weight = &join->weights[i * output->count + i];
+            double *weight = &join->weights[i * input->count + j];
 
             // TODO: Swap the following two statements and see
             input_neuron->loss_gradient +=
