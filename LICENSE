@@ -1,25 +1,3 @@
-# Neurotic: A Neural Network in C
-
-A very basic but working neural network. Only `sigmoid` activation and `binary cross entropy` cost available for now. This is a highly experimental project and the APIs will definitely change in the future.
-
-# Build
-
-You'll need CMake to build it. Easiest way is to install CMake extension from the Visual Studio Code marketplace.
-
-```shell
-cmake -S . -B build
-cd build
-make neurotic
-./neurotic
-```
-
-# Usage
-
-Check out the example in `main.c`
-
-# LICENSE
-
-```
 This is free and unencumbered software released into the public domain.
 
 Anyone is free to copy, modify, publish, use, compile, sell, or
@@ -44,4 +22,3 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <https://unlicense.org>
-```
