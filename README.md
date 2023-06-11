@@ -9,8 +9,8 @@ You'll need CMake to build it. Easiest way is to install CMake extension from th
 ```shell
 cmake -S . -B build
 cd build
-make nn
-./nn
+make neurotic
+./neurotic
 ```
 
 # Usage
