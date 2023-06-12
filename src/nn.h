@@ -9,6 +9,7 @@ typedef struct Activation {
 } Activation;
 
 void activation_init_sigmoid(Activation *activation);
+void activation_init_relu(Activation *activation);
 void activation_deinit(Activation *activation);
 
 typedef struct Cost {
@@ -17,6 +18,7 @@ typedef struct Cost {
 } Cost;
 
 void cost_init_bin_cross_entropy(Cost *cost);
+void cost_init_mean_squared(Cost *cost);
 void cost_deinit(Cost *cost);
 
 typedef struct Neuron {
@@ -31,12 +33,12 @@ void neuron_deinit(Neuron *neuron);
 typedef struct DenseLayer {
     int count;
     Neuron *neurons;
-    Activation activation;
+    Activation *activation;
 } DenseLayer;
 
-void dense_layer_init(DenseLayer *layer, int count, Activation activation);
+void dense_layer_init(DenseLayer *layer, int count, Activation *activation);
 void dense_layer_fill_values(DenseLayer *layer, const double *input);
-void dense_layer_fill_loss_gradients(DenseLayer *layer, Cost cost,
+void dense_layer_fill_loss_gradients(DenseLayer *layer, Cost *cost,
                                      const double *expected);
 void dense_layer_print(const DenseLayer *layer);
 void dense_layer_deinit(DenseLayer *layer);
@@ -58,12 +60,11 @@ typedef struct NeuralNetwork {
     DenseLayer *layers;
     LayerJoin *joins;
     double learning_rate;
-    Cost cost;
+    Cost *cost;
 } NeuralNetwork;
 
-void neural_network_init(NeuralNetwork *nn, int count, int *layer_counts,
-                         double learning_rate, Activation activation,
-                         Cost cost);
+void neural_network_init(NeuralNetwork *nn, int count, DenseLayer *layers,
+                         double learning_rate, Cost *cost);
 const DenseLayer *neural_network_first_layer(const NeuralNetwork *nn);
 const DenseLayer *neural_network_last_layer(const NeuralNetwork *nn);
 void neural_network_train(NeuralNetwork *nn, const double *input,

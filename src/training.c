@@ -66,6 +66,10 @@ void training_set_init_from_csv(TrainingSet *set, const char *filename) {
     free(buffer);
 }
 
+int training_set_rows(const TrainingSet *set) { return set->rows; }
+
+int training_set_cols(const TrainingSet *set) { return set->cols; }
+
 void training_set_deinit(TrainingSet *set) {
     free(set->data);
     set->data = NULL;

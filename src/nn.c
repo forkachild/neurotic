@@ -4,13 +4,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static double sigmoid(double input) { return 1.0 / (1.0 + exp(-input)); }
+static double activation_sigmoid(double input) {
+    return 1.0 / (1.0 + exp(-input));
+}
 
-static double d_sigmoid(double input) { return input * (1.0 - input); }
+static double activation_d_sigmoid(double input) {
+    return input * (1.0 - input);
+}
 
 void activation_init_sigmoid(Activation *activation) {
-    activation->fn = &sigmoid;
-    activation->d_fn = &d_sigmoid;
+    activation->fn = &activation_sigmoid;
+    activation->d_fn = &activation_d_sigmoid;
+}
+
+static double activation_relu(double input) {
+    return input > 0.0 ? input : 0.0;
+}
+
+static double activation_d_relu(double input) {
+    return input > 0.0 ? 1.0 : 0.0;
+}
+
+void activation_init_relu(Activation *activation) {
+    activation->fn = &activation_relu;
+    activation->d_fn = &activation_d_relu;
 }
 
 void activation_deinit(Activation *activation) {
@@ -18,18 +35,31 @@ void activation_deinit(Activation *activation) {
     activation->d_fn = NULL;
 }
 
-static double binary_cross_entropy(double predicted, double expected) {
+static double cost_binary_cross_entropy(double predicted, double expected) {
     return -(expected * log2(predicted)) -
            ((1.0 - expected) * log2(1.0 - predicted));
 }
 
-static double d_binary_cross_entropy(double predicted, double expected) {
+static double cost_d_binary_cross_entropy(double predicted, double expected) {
     return -(expected / predicted) + ((1.0 - expected) / (1.0 - predicted));
 }
 
 void cost_init_bin_cross_entropy(Cost *cost) {
-    cost->fn = &binary_cross_entropy;
-    cost->d_fn = &d_binary_cross_entropy;
+    cost->fn = &cost_binary_cross_entropy;
+    cost->d_fn = &cost_d_binary_cross_entropy;
+}
+
+static double cost_mean_squared(double predicted, double expected) {
+    return 0.5 * (expected - predicted) * (expected - predicted);
+}
+
+static double cost_d_mean_squared(double predicted, double expected) {
+    return expected - predicted;
+}
+
+void cost_init_mean_squared(Cost *cost) {
+    cost->fn = &cost_mean_squared;
+    cost->d_fn = &cost_d_mean_squared;
 }
 
 void cost_deinit(Cost *cost) {
@@ -45,7 +75,7 @@ void neuron_deinit(Neuron *neuron) {
     neuron->loss_gradient = 0.0;
 }
 
-void dense_layer_init(DenseLayer *layer, int count, Activation activation) {
+void dense_layer_init(DenseLayer *layer, int count, Activation *activation) {
     Neuron *neurons = (Neuron *)malloc(count * sizeof(Neuron));
 
     for (int i = 0; i < count; i++)
@@ -61,15 +91,15 @@ void dense_layer_fill_values(DenseLayer *layer, const double *input) {
         layer->neurons[i].value = input[i];
 }
 
-void dense_layer_fill_loss_gradients(DenseLayer *layer, Cost cost,
+void dense_layer_fill_loss_gradients(DenseLayer *layer, Cost *cost,
                                      const double *expected) {
     Neuron *neurons = layer->neurons;
 
     for (int i = 0; i < layer->count; i++) {
         Neuron *neuron = &neurons[i];
 
-        neuron->loss_gradient = cost.d_fn(neuron->value, expected[i]) *
-                                layer->activation.d_fn(neuron->value);
+        neuron->loss_gradient = cost->d_fn(neuron->value, expected[i]) *
+                                layer->activation->d_fn(neuron->value);
     }
 }
 
@@ -113,7 +143,7 @@ void layer_join_forward(LayerJoin *join, DenseLayer *input,
             sum += join->weights[weights_offset + j] * input->neurons[j].value;
 
         // Assign the activated value
-        output->neurons[i].value = output->activation.fn(sum);
+        output->neurons[i].value = output->activation->fn(sum);
     }
 }
 
@@ -137,7 +167,7 @@ void layer_join_backward(LayerJoin *join, DenseLayer *input, DenseLayer *output,
             // TODO: Swap the following two statements and see
             input_neuron->loss_gradient +=
                 output_neuron->loss_gradient * *weight *
-                input->activation.d_fn(input_neuron->value);
+                input->activation->d_fn(input_neuron->value);
 
             // Adjust the weight
             *weight -= learning_rate * output_neuron->loss_gradient *
@@ -154,16 +184,10 @@ void layer_join_deinit(LayerJoin *join) {
     join->weights = NULL;
 }
 
-void neural_network_init(NeuralNetwork *nn, int count, int *layer_counts,
-                         double learning_rate, Activation activation,
-                         Cost cost) {
+void neural_network_init(NeuralNetwork *nn, int count, DenseLayer *layers,
+                         double learning_rate, Cost *cost) {
     if (count < 2)
         return;
-
-    DenseLayer *layers = (DenseLayer *)malloc(count * sizeof(DenseLayer));
-
-    for (int i = 0; i < count; i++)
-        dense_layer_init(&layers[i], layer_counts[i], activation);
 
     LayerJoin *joins = (LayerJoin *)malloc((count - 1) * sizeof(LayerJoin));
 
@@ -198,7 +222,8 @@ static void neural_network_error_backpropagate(NeuralNetwork *nn) {
 
 void neural_network_train(NeuralNetwork *nn, const double *input,
                           const double *expected) {
-    neural_network_predict(nn, input);
+    dense_layer_fill_values(&nn->layers[0], input);
+    neural_network_forward(nn);
     dense_layer_fill_loss_gradients(&nn->layers[nn->count - 1], nn->cost,
                                     expected);
     neural_network_error_backpropagate(nn);
@@ -217,5 +242,4 @@ void neural_network_deinit(NeuralNetwork *nn) {
         layer_join_deinit(&nn->joins[i]);
 
     free(nn->joins);
-    free(nn->layers);
 }
